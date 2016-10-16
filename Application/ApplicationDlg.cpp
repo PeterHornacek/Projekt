@@ -618,3 +618,5 @@ void CApplicationDlg::OnUpdateLogClear(CCmdUI *pCmdUI)
 {
 	pCmdUI->Enable(::IsWindow(m_ctrlLog.m_hWnd) && m_ctrlLog.IsWindowVisible());
 }
+
+//koment
