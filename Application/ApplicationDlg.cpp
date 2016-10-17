@@ -11,6 +11,9 @@
 #include <vector>
 #include "Utils.h"
 #include <omp.h>
+#include <gdiplus.h>
+#include <algorithm>
+#include <iostream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -19,6 +22,13 @@
 #ifndef MIN_SIZE
 #define MIN_SIZE 300
 #endif
+
+typedef enum _MESSAGES
+{
+	WM_DRAW_IMAGE = (WM_USER + 1),
+	WM_DRAW_HISTOGRAM,
+	WM_FINISH
+};
 
 void CStaticImage::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
@@ -234,6 +244,7 @@ BEGIN_MESSAGE_MAP(CApplicationDlg, CDialogEx)
 	ON_WM_CLOSE()
 	ON_WM_SIZE()
 	ON_WM_SIZING()
+	ON_MESSAGE(WM_FINISH, OnFinish)
 	ON_MESSAGE(WM_DRAW_IMAGE, OnDrawImage)
 	ON_MESSAGE(WM_DRAW_HISTOGRAM, OnDrawHistogram)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_LIST, OnLvnItemchangedFileList)
@@ -242,6 +253,14 @@ BEGIN_MESSAGE_MAP(CApplicationDlg, CDialogEx)
 	ON_COMMAND(ID_LOG_CLEAR, OnLogClear)
 	ON_UPDATE_COMMAND_UI(ID_LOG_CLEAR, OnUpdateLogClear)
 	ON_WM_DESTROY()
+	ON_COMMAND(ID_HISTOGRAM_RED, &CApplicationDlg::OnHistogramRed)
+	ON_COMMAND(ID_HISTOGRAM_GREEN, &CApplicationDlg::OnHistogramGreen)
+	ON_COMMAND(ID_HISTOGRAM_BLUE, &CApplicationDlg::OnHistogramBlue)
+	ON_COMMAND(ID_HISTOGRAM_LMINANCE, &CApplicationDlg::OnHistogramLminance)
+	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_RED, &CApplicationDlg::OnUpdateHistogramRed)
+	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_GREEN, &CApplicationDlg::OnUpdateHistogramGreen)
+	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_BLUE, &CApplicationDlg::OnUpdateHistogramBlue)
+	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_LMINANCE, &CApplicationDlg::OnUpdateHistogramLminance)
 END_MESSAGE_MAP()
 
 
@@ -257,16 +276,126 @@ void CApplicationDlg::OnDestroy()
 	}
 }
 
+LRESULT CApplicationDlg::OnFinish(WPARAM wParam, LPARAM lParam)
+{
+	CalcData *ptr = (CalcData*)wParam;
+
+	if (ptr)
+	{
+		if (m_pCalcData)
+		{
+			if (!ptr->bCancel)
+			{
+				m_histogramAlpha = std::move(ptr->hisA);
+				m_histogramRed = std::move(ptr->hisR);
+				m_histogramGreen = std::move(ptr->hisG);
+				m_histogramBlue = std::move(ptr->hisB);
+				m_pBitmap = ptr->obr;
+				ptr->obr = nullptr;
+
+				m_ctrlImage.Invalidate();
+
+				m_ctrlHistogram.Invalidate();
+
+				if (m_pCalcData == ptr)
+				{
+					m_pCalcData = NULL;
+				}
+			}
+		}
+	}
+
+	return S_OK;
+}
+
 LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
 	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
 
 	CDC * pDC = CDC::FromHandle(lpDI->hDC);
 
+	int max, height, width, v, s;
+
 	pDC->FillSolidRect(&(lpDI->rcItem), RGB(255, 255, 255));
 
 	CBrush brBlack(RGB(0, 0, 0));
 	pDC->FrameRect(&(lpDI->rcItem), &brBlack);
+
+	height = (lpDI->rcItem.bottom - lpDI->rcItem.top) - 2;
+	width = (lpDI->rcItem.right - lpDI->rcItem.left) - 2;
+
+	RECT r = { 0,0,1,1 };
+
+	if (m_pBitmap != nullptr)
+	{
+		if (m_bShowRed && !m_histogramRed.empty())
+		{
+			max = *std::max_element(m_histogramRed.begin(), m_histogramRed.end());
+
+			for (int i = 0; i < 256; i++)
+			{
+				v = m_histogramRed[i] * height / max;
+				s = i * width / 255;
+				r.left = lpDI->rcItem.left + s;
+				r.right = r.left + 1;
+				r.bottom = lpDI->rcItem.bottom;
+				r.top = lpDI->rcItem.bottom - v;
+
+				pDC->FillSolidRect(&r, RGB(255, 0, 0));
+			}
+		}
+		else if (m_bShowGreen && !m_histogramGreen.empty())
+		{
+			max = *std::max_element(m_histogramGreen.begin(), m_histogramGreen.end());
+
+			for (int i = 0; i < 256; i++)
+			{
+				v = m_histogramGreen[i] * height / max;
+				s = i * width / 255;
+				r.left = lpDI->rcItem.left + s;
+				r.right = r.left + 1;
+				r.bottom = lpDI->rcItem.bottom;
+				r.top = lpDI->rcItem.bottom - v;
+
+				pDC->FillSolidRect(&r, RGB(0, 255, 0));
+			}
+		}
+		else if (m_bShowBlue && !m_histogramBlue.empty())
+		{
+			max = *std::max_element(m_histogramBlue.begin(), m_histogramBlue.end());
+
+			for (int i = 0; i < 256; i++)
+			{
+				v = m_histogramBlue[i] * height / max;
+				s = i * width / 255;
+				r.left = lpDI->rcItem.left + s;
+				r.right = r.left + 1;
+				r.bottom = lpDI->rcItem.bottom;
+				r.top = lpDI->rcItem.bottom - v;
+
+				pDC->FillSolidRect(&r, RGB(0, 0, 255));
+			}
+		}
+		else if (!m_histogramAlpha.empty())
+		{
+			max = *std::max_element(m_histogramAlpha.begin(), m_histogramAlpha.end());
+
+			for (int i = 0; i < 256; i++)
+			{
+				v = m_histogramAlpha[i] * height / max;
+				s = i * width / 255;
+				r.left = lpDI->rcItem.left + s;
+				r.right = r.left + 1;
+				r.bottom = lpDI->rcItem.bottom;
+				r.top = lpDI->rcItem.bottom - v;
+
+				pDC->FillSolidRect(&r, RGB(0, 0, 0));
+			}
+		}
+
+
+
+	}
 
 	return S_OK;
 }
@@ -568,6 +697,93 @@ LRESULT CApplicationDlg::OnKickIdle(WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
+void CalcHistogram(CalcData * pData)
+{
+	int height, width, r, g, b, a;
+	Gdiplus::Color color;
+
+	pData->hisA.clear();
+	pData->hisR.clear();
+	pData->hisG.clear();
+	pData->hisB.clear();
+
+	pData->hisA.assign(256, 0);
+	pData->hisR.assign(256, 0);
+	pData->hisG.assign(256, 0);
+	pData->hisB.assign(256, 0);
+
+	if (pData->bCancel == true)
+		return;
+
+	height = pData->obr->GetHeight();
+	width = pData->obr->GetWidth();
+
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++)
+		{
+			if (pData->bCancel == true)
+				return;
+
+			pData->obr->GetPixel(i, j, &color);
+			r = color.GetRed();
+			g = color.GetGreen();
+			b = color.GetBlue();
+			a = (r + b + g) / 3;
+			pData->hisA[a] = pData->hisA[a] + 1;
+			pData->hisR[r] = pData->hisR[r] + 1;
+			pData->hisG[g] = pData->hisG[g] + 1;
+			pData->hisB[b] = pData->hisB[b] + 1;
+		}
+}
+
+void CalcHistogramBmpData(CalcData * pData)
+{
+	RECT r = { 0, 0,(LONG)pData->obr->GetWidth(),(LONG)pData->obr->GetHeight() };
+	Gdiplus::Rect rect = { r.left, r.top, r.right - r.left, r.bottom - r.top };
+	Gdiplus::BitmapData* bmpData = new Gdiplus::BitmapData;
+	INT32 * data;
+	int width, height, A, R, G, B;
+	INT32 val;
+
+	pData->obr->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
+	data = (INT32*)bmpData->Scan0;
+	height = bmpData->Height;
+	width = bmpData->Width;
+
+	pData->hisA.clear();
+	pData->hisR.clear();
+	pData->hisG.clear();
+	pData->hisB.clear();
+
+	pData->hisA.assign(256, 0);
+	pData->hisR.assign(256, 0);
+	pData->hisG.assign(256, 0);
+	pData->hisB.assign(256, 0);
+
+	if (pData->bCancel == true)
+		return;
+
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+		{
+			if (pData->bCancel == true)
+				return;
+
+			val = *(data + y * width + x);
+			R = (val >> 16) & 0xFF;
+			G = (val >> 8) & 0xFF;
+			B = val & 0xFF;
+			A = (R + G + B) / 3;
+
+			pData->hisA[A] = pData->hisA[A] + 1;
+			pData->hisR[R] = pData->hisR[R] + 1;
+			pData->hisG[G] = pData->hisG[G] + 1;
+			pData->hisB[B] = pData->hisB[B] + 1;
+		}
+
+	pData->obr->UnlockBits(bmpData);
+}
+
 void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
@@ -586,6 +802,20 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 	if (!csFileName.IsEmpty())
 	{
 		m_pBitmap = Gdiplus::Bitmap::FromFile(csFileName);
+		m_pCalcData = new CalcData;
+		m_pCalcData->obr = Gdiplus::Bitmap::FromFile(csFileName);
+		m_pCalcData->hisA = std::move(m_histogramAlpha);
+		m_pCalcData->hisR = std::move(m_histogramRed);
+		m_pCalcData->hisG = std::move(m_histogramGreen);
+		m_pCalcData->hisB = std::move(m_histogramBlue);
+		m_pCalcData->m_pWnd = this;
+		m_pCalcData->bCancel = FALSE;
+		m_pCalcData->pocet = m_MT;
+		m_pCalcData->mcas = &m_ctrlLog;
+
+		//CalcHistogramBmpData(m_pCalcData);
+		CalcHistogram(m_pCalcData);
+		m_pCalcData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)m_pCalcData);
 	}
 
 	m_ctrlImage.Invalidate();
@@ -619,4 +849,93 @@ void CApplicationDlg::OnUpdateLogClear(CCmdUI *pCmdUI)
 	pCmdUI->Enable(::IsWindow(m_ctrlLog.m_hWnd) && m_ctrlLog.IsWindowVisible());
 }
 
-//koment
+void CApplicationDlg::OnHistogramRed()
+{
+	// TODO: Add your command handler code here
+	m_bShowRed = TRUE;
+	m_bShowGreen = m_bShowBlue = m_bShowAlpha = FALSE;
+
+	m_bCheckRed = TRUE;
+	m_bCheckGreen = m_bCheckBlue = m_bCheckLuminance = FALSE;
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnHistogramGreen()
+{
+	// TODO: Add your command handler code here
+	m_bShowGreen = TRUE;
+	m_bShowBlue = m_bShowRed = m_bShowAlpha = FALSE;
+
+	m_bCheckGreen = TRUE;
+	m_bCheckRed = m_bCheckBlue = m_bCheckLuminance = FALSE;
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnHistogramBlue()
+{
+	// TODO: Add your command handler code here
+	m_bShowBlue = TRUE;
+	m_bShowGreen = m_bShowRed = m_bShowAlpha = FALSE;
+
+	m_bCheckBlue = TRUE;
+	m_bCheckGreen = m_bCheckRed = m_bCheckLuminance = FALSE;
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnHistogramLminance()
+{
+	// TODO: Add your command handler code here
+	m_bShowAlpha = TRUE;
+	m_bShowRed = m_bShowGreen = m_bShowBlue = FALSE;
+
+	m_bCheckLuminance = TRUE;
+	m_bCheckGreen = m_bCheckBlue = m_bCheckRed = FALSE;
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnUpdateHistogramRed(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckRed == TRUE)
+		pCmdUI->SetCheck(m_bCheckRed);
+	else
+		pCmdUI->SetCheck(m_bCheckRed);
+}
+
+
+void CApplicationDlg::OnUpdateHistogramGreen(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckGreen == TRUE)
+		pCmdUI->SetCheck(m_bCheckGreen);
+	else
+		pCmdUI->SetCheck(m_bCheckGreen);
+}
+
+
+void CApplicationDlg::OnUpdateHistogramBlue(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckBlue == TRUE)
+		pCmdUI->SetCheck(m_bCheckBlue);
+	else
+		pCmdUI->SetCheck(m_bCheckBlue);
+}
+
+
+void CApplicationDlg::OnUpdateHistogramLminance(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckLuminance == TRUE)
+		pCmdUI->SetCheck(m_bCheckLuminance);
+	else
+		pCmdUI->SetCheck(m_bCheckLuminance);
+}
