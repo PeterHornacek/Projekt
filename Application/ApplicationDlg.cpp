@@ -14,6 +14,7 @@
 #include <gdiplus.h>
 #include <algorithm>
 #include <iostream>
+using namespace Gdiplus;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -311,11 +312,11 @@ LRESULT CApplicationDlg::OnFinish(WPARAM wParam, LPARAM lParam)
 LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
 	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
-
-	CDC * pDC = CDC::FromHandle(lpDI->hDC);
-
 	int max, height, width, v, s;
 	int x[256], y[256];
+
+	CDC * pDC = CDC::FromHandle(lpDI->hDC);
+	
 	pDC->FillSolidRect(&(lpDI->rcItem), RGB(255, 255, 255));
 
 	CBrush brBlack(RGB(0, 0, 0));
@@ -326,7 +327,7 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 
 	RECT r = { 0,0,1,1 };
 	
-	Gdiplus::Graphics graphics(lpDI->hDC);
+	Graphics graphics(lpDI->hDC);
 
 	if (m_pBitmap != nullptr)
 	{
@@ -345,17 +346,17 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				
 				x[i] = s;
 				y[i] = v;
-				Gdiplus::PointF point(x[i], y[i]);
 				
-				pDC->FillSolidRect(&r, RGB(255, 0, 0));
+				//pDC->FillSolidRect(&r, RGB(255, 0, 0));
 			}
 			//riesenie kresleniaHistogramu pomocou krivky
-			/*Gdiplus::PointF points[256];
+			PointF points[256];
+			Pen redPen(RGB(255, 0, 0), 3);
 			for(int i = 0; i < 256; i++)
-				points[i] = { point[i],point[i+1] };
-			Gdiplus::Pen greenPen(RGB(255, 0, 0), 3);
-			PointF* points = points;
-			Gdiplus::DrawCurve(&greenPen, points, 256);*/
+			{
+				points[i] = { PointF(x[i],y[i]) };
+			}
+			graphics.DrawCurve(&redPen, points, 256);
 		}
 		else if (m_bShowGreen && !m_histogramGreen.empty())
 		{
