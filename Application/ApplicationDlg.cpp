@@ -315,7 +315,7 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 	CDC * pDC = CDC::FromHandle(lpDI->hDC);
 
 	int max, height, width, v, s;
-
+	int x[256], y[256];
 	pDC->FillSolidRect(&(lpDI->rcItem), RGB(255, 255, 255));
 
 	CBrush brBlack(RGB(0, 0, 0));
@@ -325,6 +325,8 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 	width = (lpDI->rcItem.right - lpDI->rcItem.left) - 2;
 
 	RECT r = { 0,0,1,1 };
+	
+	Gdiplus::Graphics graphics(lpDI->hDC);
 
 	if (m_pBitmap != nullptr)
 	{
@@ -340,9 +342,20 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				r.right = r.left + 1;
 				r.bottom = lpDI->rcItem.bottom;
 				r.top = lpDI->rcItem.bottom - v;
-
+				
+				x[i] = s;
+				y[i] = v;
+				Gdiplus::PointF point(x[i], y[i]);
+				
 				pDC->FillSolidRect(&r, RGB(255, 0, 0));
 			}
+			//riesenie kresleniaHistogramu pomocou krivky
+			/*Gdiplus::PointF points[256];
+			for(int i = 0; i < 256; i++)
+				points[i] = { point[i],point[i+1] };
+			Gdiplus::Pen greenPen(RGB(255, 0, 0), 3);
+			PointF* points = points;
+			Gdiplus::DrawCurve(&greenPen, points, 256);*/
 		}
 		else if (m_bShowGreen && !m_histogramGreen.empty())
 		{
