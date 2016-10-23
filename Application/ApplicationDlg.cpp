@@ -313,7 +313,7 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
 	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
 	int max, height, width, v, s;
-	float x[256], y[256];
+	int x[256], y[256];
 
 	CDC * pDC = CDC::FromHandle(lpDI->hDC);
 	
@@ -326,10 +326,12 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 	width = (lpDI->rcItem.right - lpDI->rcItem.left) - 2;
 
 	RECT r = { 0,0,1,1 };
-	
-	HDC m_hdc = pDC->GetSafeHdc();
 
-	Graphics graphics(m_hdc);
+	HDC hdc = pDC->GetSafeHdc();
+
+	//HDC hdc = *pDC;
+
+	Graphics graphics(hdc);
 
 	for (int i = 0; i < 256; i++)
 	{
@@ -358,13 +360,13 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				pDC->FillSolidRect(&r, RGB(255, 0, 0));
 			}
 			//riesenie kresleniaHistogramu pomocou krivky
-			/*Point points[256];
+			Point points[256];
 			Pen redPen(RGB(255, 0, 0), 3);
 			for(int i = 0; i < 256; i++)
 			{
 				points[i] = Point(x[i],y[i]) ;
 			}
-			graphics.DrawCurve(&redPen, points, 256);*/
+			graphics.DrawCurve(&redPen, points, 256);
 		}
 		else if (m_bShowGreen && !m_histogramGreen.empty())
 		{
