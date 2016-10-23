@@ -313,7 +313,7 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
 	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
 	int max, height, width, v, s;
-	int x[256], y[256];
+	float x[256], y[256];
 
 	CDC * pDC = CDC::FromHandle(lpDI->hDC);
 	
@@ -327,7 +327,15 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 
 	RECT r = { 0,0,1,1 };
 	
-	Graphics graphics(lpDI->hDC);
+	HDC m_hdc = pDC->GetSafeHdc();
+
+	Graphics graphics(m_hdc);
+
+	for (int i = 0; i < 256; i++)
+	{
+		x[i] = 0;
+		y[i] = 0;
+	}
 
 	if (m_pBitmap != nullptr)
 	{
@@ -344,19 +352,19 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				r.bottom = lpDI->rcItem.bottom;
 				r.top = lpDI->rcItem.bottom - v;
 				
-				x[i] = s;
-				y[i] = v;
+				x[i] = i * width / 255;
+				y[i] = m_histogramRed[i] * height / max;
 				
-				//pDC->FillSolidRect(&r, RGB(255, 0, 0));
+				pDC->FillSolidRect(&r, RGB(255, 0, 0));
 			}
 			//riesenie kresleniaHistogramu pomocou krivky
-			PointF points[256];
+			/*Point points[256];
 			Pen redPen(RGB(255, 0, 0), 3);
 			for(int i = 0; i < 256; i++)
 			{
-				points[i] = { PointF(x[i],y[i]) };
+				points[i] = Point(x[i],y[i]) ;
 			}
-			graphics.DrawCurve(&redPen, points, 256);
+			graphics.DrawCurve(&redPen, points, 256);*/
 		}
 		else if (m_bShowGreen && !m_histogramGreen.empty())
 		{
@@ -371,8 +379,19 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				r.bottom = lpDI->rcItem.bottom;
 				r.top = lpDI->rcItem.bottom - v;
 
+				x[i] = i * width / 255;
+				y[i] = m_histogramGreen[i] * height / max;
+
 				pDC->FillSolidRect(&r, RGB(0, 255, 0));
 			}
+			//riesenie kresleniaHistogramu pomocou krivky
+			/*Point points[256];
+			Pen redPen(RGB(0, 255, 0), 3);
+			for(int i = 0; i < 256; i++)
+			{
+				points[i] = Point(x[i],y[i]) ;
+			}
+			graphics.DrawCurve(&redPen, points, 256);*/
 		}
 		else if (m_bShowBlue && !m_histogramBlue.empty())
 		{
@@ -387,8 +406,19 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				r.bottom = lpDI->rcItem.bottom;
 				r.top = lpDI->rcItem.bottom - v;
 
+				x[i] = i * width / 255;
+				y[i] = m_histogramBlue[i] * height / max;
+
 				pDC->FillSolidRect(&r, RGB(0, 0, 255));
 			}
+			//riesenie kresleniaHistogramu pomocou krivky
+			/*Point points[256];
+			Pen redPen(RGB(0, 0, 255), 3);
+			for(int i = 0; i < 256; i++)
+			{
+				points[i] = Point(x[i],y[i]) ;
+			}
+			graphics.DrawCurve(&redPen, points, 255);*/
 		}
 		else if (!m_histogramAlpha.empty())
 		{
@@ -403,8 +433,19 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 				r.bottom = lpDI->rcItem.bottom;
 				r.top = lpDI->rcItem.bottom - v;
 
+				x[i] = i * width / 255;
+				y[i] = m_histogramAlpha[i] * height / max;
+
 				pDC->FillSolidRect(&r, RGB(0, 0, 0));
 			}
+			//riesenie kresleniaHistogramu pomocou krivky
+			/*Point points[256];
+			Pen redPen(RGB(0, 0, 0), 3);
+			for(int i = 0; i < 256; i++)
+			{
+				points[i] = Point(x[i],y[i]) ;
+			}
+			graphics.DrawCurve(&redPen, points, 255);*/
 		}
 
 
