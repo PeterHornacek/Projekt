@@ -262,6 +262,10 @@ BEGIN_MESSAGE_MAP(CApplicationDlg, CDialogEx)
 	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_GREEN, &CApplicationDlg::OnUpdateHistogramGreen)
 	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_BLUE, &CApplicationDlg::OnUpdateHistogramBlue)
 	ON_UPDATE_COMMAND_UI(ID_HISTOGRAM_LMINANCE, &CApplicationDlg::OnUpdateHistogramLminance)
+	ON_COMMAND(ID_HISTOGRAMTYPE_COLUMNS, &CApplicationDlg::OnHistogramtypeColumns)
+	ON_COMMAND(ID_HISTOGRAMTYPE_CURVE, &CApplicationDlg::OnHistogramtypeCurve)
+	ON_UPDATE_COMMAND_UI(ID_HISTOGRAMTYPE_COLUMNS, &CApplicationDlg::OnUpdateHistogramtypeColumns)
+	ON_UPDATE_COMMAND_UI(ID_HISTOGRAMTYPE_CURVE, &CApplicationDlg::OnUpdateHistogramtypeCurve)
 END_MESSAGE_MAP()
 
 
@@ -309,11 +313,63 @@ LRESULT CApplicationDlg::OnFinish(WPARAM wParam, LPARAM lParam)
 	return S_OK;
 }
 
-LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
+void CApplicationDlg::columnHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> hist, COLORREF color)
 {
 	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
 	int max, height, width, v, s;
-	int x[256], y[256];
+
+	max = *std::max_element(hist.begin(), hist.end());
+
+	height = (lpDI->rcItem.bottom - lpDI->rcItem.top) - 2;
+	width = (lpDI->rcItem.right - lpDI->rcItem.left) - 2;
+
+	RECT r = { 0,0,1,1 };
+
+	for (int i = 0; i < 256; i++)
+	{
+		v = hist[i] * height / max + 1;
+		s = i * width / 255;
+		r.left = lpDI->rcItem.left + s;
+		r.right = r.left + 1;
+		r.bottom = lpDI->rcItem.bottom;
+		r.top = lpDI->rcItem.bottom - v;
+
+		pDC->FillSolidRect(&r, color);
+	}
+}
+
+void CApplicationDlg::curveHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> hist, COLORREF color)
+{
+	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
+	int max, height, width, x, y;
+
+	Pen pen(color, 50);
+	PointF points[256];
+	//HDC hdc = pDC->GetSafeHdc();
+	HDC hdc = pDC->m_hDC;
+	Graphics graphics(hdc);
+
+	max = *std::max_element(hist.begin(), hist.end());
+
+	height = (lpDI->rcItem.bottom - lpDI->rcItem.top) - 2;
+	width = (lpDI->rcItem.right - lpDI->rcItem.left) - 2;
+
+	for (int i = 0; i < 256; i++)
+	{
+		y = hist[i] * height / max + 1;
+		x = i * width / 255;
+
+		points[i].X = x;
+		points[i].Y = y;
+	}
+
+	graphics.DrawCurve(&pen, points, 256);
+	//hdc->DrawLine(&pen, Point(10, 10), Point(20, 10));
+}
+
+LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
+{
+	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
 
 	CDC * pDC = CDC::FromHandle(lpDI->hDC);
 	
@@ -322,136 +378,36 @@ LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 	CBrush brBlack(RGB(0, 0, 0));
 	pDC->FrameRect(&(lpDI->rcItem), &brBlack);
 
-	height = (lpDI->rcItem.bottom - lpDI->rcItem.top) - 2;
-	width = (lpDI->rcItem.right - lpDI->rcItem.left) - 2;
-
-	RECT r = { 0,0,1,1 };
-
-	HDC hdc = pDC->GetSafeHdc();
-
-	//HDC hdc = *pDC;
-
-	Graphics graphics(hdc);
-
-	for (int i = 0; i < 256; i++)
-	{
-		x[i] = 0;
-		y[i] = 0;
-	}
-
 	if (m_pBitmap != nullptr)
 	{
 		if (m_bShowRed && !m_histogramRed.empty())
 		{
-			max = *std::max_element(m_histogramRed.begin(), m_histogramRed.end());
-
-			for (int i = 0; i < 256; i++)
-			{
-				v = m_histogramRed[i] * height / max;
-				s = i * width / 255;
-				r.left = lpDI->rcItem.left + s;
-				r.right = r.left + 1;
-				r.bottom = lpDI->rcItem.bottom;
-				r.top = lpDI->rcItem.bottom - v;
-				
-				x[i] = i * width / 255;
-				y[i] = m_histogramRed[i] * height / max;
-				
-				pDC->FillSolidRect(&r, RGB(255, 0, 0));
-			}
-			//riesenie kresleniaHistogramu pomocou krivky
-			Point points[256];
-			Pen redPen(RGB(255, 0, 0), 3);
-			for(int i = 0; i < 256; i++)
-			{
-				points[i] = Point(x[i],y[i]) ;
-			}
-			graphics.DrawCurve(&redPen, points, 256);
+			if(m_bShowCtype)
+				columnHist(wParam, pDC, m_histogramRed, RGB(255,0,0));
+			if (m_bShowCutype)
+				curveHist(wParam, pDC, m_histogramRed, RGB(255, 0, 0));
 		}
-		else if (m_bShowGreen && !m_histogramGreen.empty())
+		if (m_bShowGreen && !m_histogramGreen.empty())
 		{
-			max = *std::max_element(m_histogramGreen.begin(), m_histogramGreen.end());
-
-			for (int i = 0; i < 256; i++)
-			{
-				v = m_histogramGreen[i] * height / max;
-				s = i * width / 255;
-				r.left = lpDI->rcItem.left + s;
-				r.right = r.left + 1;
-				r.bottom = lpDI->rcItem.bottom;
-				r.top = lpDI->rcItem.bottom - v;
-
-				x[i] = i * width / 255;
-				y[i] = m_histogramGreen[i] * height / max;
-
-				pDC->FillSolidRect(&r, RGB(0, 255, 0));
-			}
-			//riesenie kresleniaHistogramu pomocou krivky
-			/*Point points[256];
-			Pen redPen(RGB(0, 255, 0), 3);
-			for(int i = 0; i < 256; i++)
-			{
-				points[i] = Point(x[i],y[i]) ;
-			}
-			graphics.DrawCurve(&redPen, points, 256);*/
+			if (m_bShowCtype)
+				columnHist(wParam, pDC, m_histogramGreen, RGB(0, 255, 0));
+			if (m_bShowCutype)
+				curveHist(wParam, pDC, m_histogramGreen, RGB(0, 255, 0));
 		}
-		else if (m_bShowBlue && !m_histogramBlue.empty())
+		if (m_bShowBlue && !m_histogramBlue.empty())
 		{
-			max = *std::max_element(m_histogramBlue.begin(), m_histogramBlue.end());
-
-			for (int i = 0; i < 256; i++)
-			{
-				v = m_histogramBlue[i] * height / max;
-				s = i * width / 255;
-				r.left = lpDI->rcItem.left + s;
-				r.right = r.left + 1;
-				r.bottom = lpDI->rcItem.bottom;
-				r.top = lpDI->rcItem.bottom - v;
-
-				x[i] = i * width / 255;
-				y[i] = m_histogramBlue[i] * height / max;
-
-				pDC->FillSolidRect(&r, RGB(0, 0, 255));
-			}
-			//riesenie kresleniaHistogramu pomocou krivky
-			/*Point points[256];
-			Pen redPen(RGB(0, 0, 255), 3);
-			for(int i = 0; i < 256; i++)
-			{
-				points[i] = Point(x[i],y[i]) ;
-			}
-			graphics.DrawCurve(&redPen, points, 255);*/
+			if (m_bShowCtype)
+				columnHist(wParam, pDC, m_histogramBlue, RGB(0, 0, 255));
+			if (m_bShowCutype)
+				curveHist(wParam, pDC, m_histogramBlue, RGB(0, 0, 255));
 		}
-		else if (!m_histogramAlpha.empty())
+		if (m_bShowAlpha && !m_histogramAlpha.empty())
 		{
-			max = *std::max_element(m_histogramAlpha.begin(), m_histogramAlpha.end());
-
-			for (int i = 0; i < 256; i++)
-			{
-				v = m_histogramAlpha[i] * height / max;
-				s = i * width / 255;
-				r.left = lpDI->rcItem.left + s;
-				r.right = r.left + 1;
-				r.bottom = lpDI->rcItem.bottom;
-				r.top = lpDI->rcItem.bottom - v;
-
-				x[i] = i * width / 255;
-				y[i] = m_histogramAlpha[i] * height / max;
-
-				pDC->FillSolidRect(&r, RGB(0, 0, 0));
-			}
-			//riesenie kresleniaHistogramu pomocou krivky
-			/*Point points[256];
-			Pen redPen(RGB(0, 0, 0), 3);
-			for(int i = 0; i < 256; i++)
-			{
-				points[i] = Point(x[i],y[i]) ;
-			}
-			graphics.DrawCurve(&redPen, points, 255);*/
+			if (m_bShowCtype)
+				columnHist(wParam, pDC, m_histogramAlpha, RGB(0, 0, 0));
+			if (m_bShowCutype)
+				curveHist(wParam, pDC, m_histogramAlpha, RGB(0, 0, 0));
 		}
-
-
-
 	}
 
 	return S_OK;
@@ -909,11 +865,16 @@ void CApplicationDlg::OnUpdateLogClear(CCmdUI *pCmdUI)
 void CApplicationDlg::OnHistogramRed()
 {
 	// TODO: Add your command handler code here
-	m_bShowRed = TRUE;
-	m_bShowGreen = m_bShowBlue = m_bShowAlpha = FALSE;
-
-	m_bCheckRed = TRUE;
-	m_bCheckGreen = m_bCheckBlue = m_bCheckLuminance = FALSE;
+	if (m_bShowRed == TRUE)
+		m_bShowRed = FALSE;
+	else
+		m_bShowRed = TRUE;
+	//m_bShowGreen = m_bShowBlue = m_bShowAlpha = FALSE;
+	if (m_bCheckRed == TRUE)
+		m_bCheckRed = FALSE;
+	else
+		m_bCheckRed = TRUE;
+	//m_bCheckGreen = m_bCheckBlue = m_bCheckLuminance = FALSE;
 
 	m_ctrlHistogram.Invalidate();
 }
@@ -922,11 +883,16 @@ void CApplicationDlg::OnHistogramRed()
 void CApplicationDlg::OnHistogramGreen()
 {
 	// TODO: Add your command handler code here
-	m_bShowGreen = TRUE;
-	m_bShowBlue = m_bShowRed = m_bShowAlpha = FALSE;
-
-	m_bCheckGreen = TRUE;
-	m_bCheckRed = m_bCheckBlue = m_bCheckLuminance = FALSE;
+	if (m_bShowGreen == TRUE)
+		m_bShowGreen = FALSE;
+	else
+		m_bShowGreen = TRUE;
+	//m_bShowBlue = m_bShowRed = m_bShowAlpha = FALSE;
+	if (m_bCheckGreen == TRUE)
+		m_bCheckGreen = FALSE;
+	else
+		m_bCheckGreen = TRUE;
+	//m_bCheckRed = m_bCheckBlue = m_bCheckLuminance = FALSE;
 
 	m_ctrlHistogram.Invalidate();
 }
@@ -935,11 +901,16 @@ void CApplicationDlg::OnHistogramGreen()
 void CApplicationDlg::OnHistogramBlue()
 {
 	// TODO: Add your command handler code here
-	m_bShowBlue = TRUE;
-	m_bShowGreen = m_bShowRed = m_bShowAlpha = FALSE;
-
-	m_bCheckBlue = TRUE;
-	m_bCheckGreen = m_bCheckRed = m_bCheckLuminance = FALSE;
+	if(m_bShowBlue == TRUE)
+		m_bShowBlue = FALSE;
+	else
+		m_bShowBlue = TRUE;
+	//m_bShowGreen = m_bShowRed = m_bShowAlpha = FALSE;
+	if(m_bCheckBlue == TRUE)
+		m_bCheckBlue = FALSE;
+	else
+		m_bCheckBlue = TRUE;
+	//m_bCheckGreen = m_bCheckRed = m_bCheckLuminance = FALSE;
 
 	m_ctrlHistogram.Invalidate();
 }
@@ -948,11 +919,16 @@ void CApplicationDlg::OnHistogramBlue()
 void CApplicationDlg::OnHistogramLminance()
 {
 	// TODO: Add your command handler code here
-	m_bShowAlpha = TRUE;
-	m_bShowRed = m_bShowGreen = m_bShowBlue = FALSE;
-
-	m_bCheckLuminance = TRUE;
-	m_bCheckGreen = m_bCheckBlue = m_bCheckRed = FALSE;
+	if (m_bShowAlpha == TRUE)
+		m_bShowAlpha = FALSE;
+	else
+		m_bShowAlpha = TRUE;
+	//m_bShowRed = m_bShowGreen = m_bShowBlue = FALSE;
+	if (m_bCheckLuminance == TRUE)
+		m_bCheckLuminance = FALSE;
+	else
+		m_bCheckLuminance = TRUE;
+	//m_bCheckGreen = m_bCheckBlue = m_bCheckRed = FALSE;
 
 	m_ctrlHistogram.Invalidate();
 }
@@ -995,4 +971,70 @@ void CApplicationDlg::OnUpdateHistogramLminance(CCmdUI *pCmdUI)
 		pCmdUI->SetCheck(m_bCheckLuminance);
 	else
 		pCmdUI->SetCheck(m_bCheckLuminance);
+}
+
+
+void CApplicationDlg::OnHistogramtypeColumns()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowCtype == TRUE)
+		m_bShowCtype = FALSE;
+	else
+	{
+		m_bShowCtype = TRUE;
+		m_bShowCutype = FALSE;
+	}
+
+	if (m_bCheckCtype == TRUE)
+		m_bCheckCtype = FALSE;
+	else
+	{
+		m_bCheckCtype = TRUE;
+		m_bCheckCutype = FALSE;
+	}
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnHistogramtypeCurve()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowCutype == TRUE)
+		m_bShowCutype = FALSE;
+	else
+	{
+		m_bShowCutype = TRUE;
+		m_bShowCtype = FALSE;
+	}
+
+	if (m_bCheckCutype == TRUE)
+		m_bCheckCutype = FALSE;
+	else
+	{
+		m_bCheckCutype = TRUE;
+		m_bCheckCtype = FALSE;
+	}
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnUpdateHistogramtypeColumns(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckCtype == TRUE)
+		pCmdUI->SetCheck(m_bCheckCtype);
+	else
+		pCmdUI->SetCheck(m_bCheckCtype);
+}
+
+
+void CApplicationDlg::OnUpdateHistogramtypeCurve(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckCutype == TRUE)
+		pCmdUI->SetCheck(m_bCheckCutype);
+	else
+		pCmdUI->SetCheck(m_bCheckCutype);
 }

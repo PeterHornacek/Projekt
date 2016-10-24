@@ -72,6 +72,8 @@ public:
 
 	void OnOK() override {}
 	void OnCancel() override {}
+	void curveHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> hist, COLORREF color);
+	void columnHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> hist, COLORREF color);
 
 
 // Implementation
@@ -82,11 +84,15 @@ protected:
 	BOOL m_bShowRed = TRUE;
 	BOOL m_bShowGreen = FALSE;
 	BOOL m_bShowBlue = FALSE;
+	BOOL m_bShowCtype = TRUE;
+	BOOL m_bShowCutype = FALSE;
 
 	BOOL m_bCheckLuminance = FALSE;
 	BOOL m_bCheckRed = TRUE;
 	BOOL m_bCheckGreen = FALSE;
 	BOOL m_bCheckBlue = FALSE;
+	BOOL m_bCheckCtype = TRUE;
+	BOOL m_bCheckCutype = FALSE;
 
 	int m_MT = 2;
 
@@ -146,4 +152,8 @@ public:
 	afx_msg void OnUpdateHistogramGreen(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateHistogramBlue(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateHistogramLminance(CCmdUI *pCmdUI);
+	afx_msg void OnHistogramtypeColumns();
+	afx_msg void OnHistogramtypeCurve();
+	afx_msg void OnUpdateHistogramtypeColumns(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateHistogramtypeCurve(CCmdUI *pCmdUI);
 };
