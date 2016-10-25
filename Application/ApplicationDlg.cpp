@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <iostream>
 using namespace Gdiplus;
+using namespace Utils;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -266,6 +267,10 @@ BEGIN_MESSAGE_MAP(CApplicationDlg, CDialogEx)
 	ON_COMMAND(ID_HISTOGRAMTYPE_CURVE, &CApplicationDlg::OnHistogramtypeCurve)
 	ON_UPDATE_COMMAND_UI(ID_HISTOGRAMTYPE_COLUMNS, &CApplicationDlg::OnUpdateHistogramtypeColumns)
 	ON_UPDATE_COMMAND_UI(ID_HISTOGRAMTYPE_CURVE, &CApplicationDlg::OnUpdateHistogramtypeCurve)
+	ON_COMMAND(ID_CALCULATING_PIXEL, &CApplicationDlg::OnCalculatingPixel)
+	ON_COMMAND(ID_CALCULATING_LOCKBITS, &CApplicationDlg::OnCalculatingLockbits)
+	ON_UPDATE_COMMAND_UI(ID_CALCULATING_PIXEL, &CApplicationDlg::OnUpdateCalculatingPixel)
+	ON_UPDATE_COMMAND_UI(ID_CALCULATING_LOCKBITS, &CApplicationDlg::OnUpdateCalculatingLockbits)
 END_MESSAGE_MAP()
 
 
@@ -343,7 +348,7 @@ void CApplicationDlg::curveHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> h
 	LPDRAWITEMSTRUCT lpDI = (LPDRAWITEMSTRUCT)wParam;
 	int max, height, width, x, y;
 
-	Pen pen(color, 50);
+	Pen pen(color);
 	PointF points[256];
 	//HDC hdc = pDC->GetSafeHdc();
 	HDC hdc = pDC->m_hDC;
@@ -356,7 +361,7 @@ void CApplicationDlg::curveHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> h
 
 	for (int i = 0; i < 256; i++)
 	{
-		y = hist[i] * height / max + 1;
+		y = hist[i] * (double)height / (double)max + 1;
 		x = i * width / 255;
 
 		points[i].X = x;
@@ -364,7 +369,7 @@ void CApplicationDlg::curveHist(WPARAM wParam, CDC *pDC, std::vector<unsigned> h
 	}
 
 	graphics.DrawCurve(&pen, points, 256);
-	//hdc->DrawLine(&pen, Point(10, 10), Point(20, 10));
+	//graphics.DrawRectangle(&pen, 0, 0, width, height);
 }
 
 LRESULT CApplicationDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
@@ -779,19 +784,7 @@ void CalcHistogramBmpData(CalcData * pData)
 	for (int y = 0; y < height; y++)
 		for (int x = 0; x < width; x++)
 		{
-			if (pData->bCancel == true)
-				return;
-
-			val = *(data + y * width + x);
-			R = (val >> 16) & 0xFF;
-			G = (val >> 8) & 0xFF;
-			B = val & 0xFF;
-			A = (R + G + B) / 3;
-
-			pData->hisA[A] = pData->hisA[A] + 1;
-			pData->hisR[R] = pData->hisR[R] + 1;
-			pData->hisG[G] = pData->hisG[G] + 1;
-			pData->hisB[B] = pData->hisB[B] + 1;
+			Utils::calcUnitTest(pData, width, data, val, x, y);
 		}
 
 	pData->obr->UnlockBits(bmpData);
@@ -824,10 +817,12 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_pCalcData->m_pWnd = this;
 		m_pCalcData->bCancel = FALSE;
 		m_pCalcData->pocet = m_MT;
-		m_pCalcData->mcas = &m_ctrlLog;
+		//m_pCalcData->mcas = &m_ctrlLog;
 
-		//CalcHistogramBmpData(m_pCalcData);
-		CalcHistogram(m_pCalcData);
+		if(m_bShowCpixel)
+			CalcHistogramBmpData(m_pCalcData);
+		if(m_bShowClockB)
+			CalcHistogram(m_pCalcData);
 		m_pCalcData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)m_pCalcData);
 	}
 
@@ -1037,4 +1032,64 @@ void CApplicationDlg::OnUpdateHistogramtypeCurve(CCmdUI *pCmdUI)
 		pCmdUI->SetCheck(m_bCheckCutype);
 	else
 		pCmdUI->SetCheck(m_bCheckCutype);
+}
+
+
+void CApplicationDlg::OnCalculatingPixel()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowCpixel == FALSE)
+	{
+		m_bShowCpixel = TRUE;
+		m_bShowClockB = FALSE;
+	}
+		
+	
+	if (m_bCheckCpixel == FALSE)
+	{
+		m_bCheckCpixel = TRUE;
+		m_bCheckClockB = FALSE;
+	}
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnCalculatingLockbits()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowClockB == FALSE)
+	{
+		m_bShowCpixel = FALSE;
+		m_bShowClockB = TRUE;
+	}
+
+
+	if (m_bCheckClockB == FALSE)
+	{
+		m_bCheckCpixel = FALSE;
+		m_bCheckClockB = TRUE;
+	}
+
+	m_ctrlHistogram.Invalidate();
+}
+
+
+void CApplicationDlg::OnUpdateCalculatingPixel(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckCpixel == TRUE)
+		pCmdUI->SetCheck(m_bCheckCpixel);
+	else
+		pCmdUI->SetCheck(m_bCheckCpixel);
+}
+
+
+void CApplicationDlg::OnUpdateCalculatingLockbits(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckClockB == TRUE)
+		pCmdUI->SetCheck(m_bCheckClockB);
+	else
+		pCmdUI->SetCheck(m_bCheckClockB);
 }

@@ -22,3 +22,4 @@
 //LIBRARY_API int fnLibrary(void);
 
 LIBRARY_API std::pair< CString, std::vector<CString> > ParseFiles(LPCTSTR lpstrFile);
+//LIBRARY_API std::pair< CString, std::vector<CString> > calcUnitTest(LPCTSTR lpstrFile);

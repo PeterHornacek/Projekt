@@ -20,7 +20,6 @@ typedef struct
 	CWnd* m_pWnd;
 	bool bCancel;
 	int pocet;
-	CLogDlg* mcas;
 }CalcData;
 
 typedef struct
@@ -86,6 +85,8 @@ protected:
 	BOOL m_bShowBlue = FALSE;
 	BOOL m_bShowCtype = TRUE;
 	BOOL m_bShowCutype = FALSE;
+	BOOL m_bShowCpixel = TRUE;
+	BOOL m_bShowClockB = FALSE;
 
 	BOOL m_bCheckLuminance = FALSE;
 	BOOL m_bCheckRed = TRUE;
@@ -93,6 +94,8 @@ protected:
 	BOOL m_bCheckBlue = FALSE;
 	BOOL m_bCheckCtype = TRUE;
 	BOOL m_bCheckCutype = FALSE;
+	BOOL m_bCheckCpixel = TRUE;
+	BOOL m_bCheckClockB = FALSE;
 
 	int m_MT = 2;
 
@@ -156,4 +159,8 @@ public:
 	afx_msg void OnHistogramtypeCurve();
 	afx_msg void OnUpdateHistogramtypeColumns(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateHistogramtypeCurve(CCmdUI *pCmdUI);
+	afx_msg void OnCalculatingPixel();
+	afx_msg void OnCalculatingLockbits();
+	afx_msg void OnUpdateCalculatingPixel(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateCalculatingLockbits(CCmdUI *pCmdUI);
 };

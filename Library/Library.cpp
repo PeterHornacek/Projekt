@@ -29,3 +29,8 @@ LIBRARY_API std::pair< CString, std::vector<CString> > ParseFiles(LPCTSTR lpstrF
 {
 	return Utils::ParseFiles(lpstrFile);
 }
+
+/*LIBRARY_API std::pair< CString, std::vector<CString> > calcUnitTest(LPCTSTR lpstrFile)
+{
+	return Utils::calcUnitTest(CalcData * pData, <int> width, INT32 * data, INT32 val, int x, int y);
+}*/
