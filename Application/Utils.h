@@ -7,7 +7,7 @@ namespace Utils
 {
 	std::pair< CString, std::vector<CString> > ParseFiles(LPCTSTR lpstrFile);
 
-	typedef struct
+	/*typedef struct
 	{
 		Gdiplus::Bitmap* obr;
 		std::vector<unsigned> hisR;
@@ -19,5 +19,5 @@ namespace Utils
 		int pocet;
 	}CalcData;
 
-	void calcUnitTest(CalcData * pData, int width, INT32 * data, INT32 val, int x, int y);
+	void calcUnitTest(CalcData * pData, int width, INT32 * data, INT32 val, int x, int y);*/
 }

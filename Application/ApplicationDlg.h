@@ -12,14 +12,14 @@
 //definicia struktury CalcData
 typedef struct
 {
-	Gdiplus::Bitmap* obr;
-	std::vector<unsigned> hisR;
-	std::vector<unsigned> hisG;
-	std::vector<unsigned> hisB;
-	std::vector<unsigned> hisA;
-	CWnd* m_pWnd;
-	bool bCancel;
-	int pocet;
+Gdiplus::Bitmap* obr;
+std::vector<unsigned> hisR;
+std::vector<unsigned> hisG;
+std::vector<unsigned> hisB;
+std::vector<unsigned> hisA;
+CWnd* m_pWnd;
+bool bCancel;
+int pocet;
 }CalcData;
 
 typedef struct
