@@ -43,7 +43,7 @@ namespace Utils
 		}
 	}
 
-	/*void calcUnitTest(CalcData * pData, int width, INT32 * data, INT32 val, int x, int y)
+	void calcUnitTest(CalcData * pData, int width, INT32 * data, INT32 val, int x, int y)
 	{
 		int A, R, G, B;
 
@@ -60,5 +60,5 @@ namespace Utils
 		pData->hisR[R] = pData->hisR[R] + 1;
 		pData->hisG[G] = pData->hisG[G] + 1;
 		pData->hisB[B] = pData->hisB[B] + 1;
-	}*/
+	}
 }

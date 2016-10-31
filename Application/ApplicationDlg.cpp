@@ -754,25 +754,6 @@ void CalcHistogram(CalcData * pData)
 		}
 }
 
-void calcUnitTest(CalcData * pData, int width, INT32 * data, INT32 val, int x, int y)
-{
-	int A, R, G, B;
-
-	if (pData->bCancel == true)
-	return;
-
-	val = *(data + y * width + x);
-	R = (val >> 16) & 0xFF;
-	G = (val >> 8) & 0xFF;
-	B = val & 0xFF;
-	A = (R + G + B) / 3;
-
-	pData->hisA[A] = pData->hisA[A] + 1;
-	pData->hisR[R] = pData->hisR[R] + 1;
-	pData->hisG[G] = pData->hisG[G] + 1;
-	pData->hisB[B] = pData->hisB[B] + 1;
-}
-
 void CalcHistogramBmpData(CalcData * pData)
 {
 	RECT r = { 0, 0,(LONG)pData->obr->GetWidth(),(LONG)pData->obr->GetHeight() };
