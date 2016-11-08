@@ -14,6 +14,8 @@
 #include <gdiplus.h>
 #include <algorithm>
 #include <iostream>
+#include <thread>
+#include <atomic>
 using namespace Gdiplus;
 using namespace Utils;
 
@@ -805,10 +807,12 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 	if (pos)
 		csFileName = m_csDirectory + m_ctrlFileList.GetItemText(m_ctrlFileList.GetNextSelectedItem(pos), 0);
 
+	std::atomic<std::thread::id> m_pthreadID;
+
 	if (!csFileName.IsEmpty())
 	{
 		m_pBitmap = Gdiplus::Bitmap::FromFile(csFileName);
-		m_pCalcData = new CalcData;
+		/*m_pCalcData = new CalcData;
 		m_pCalcData->obr = Gdiplus::Bitmap::FromFile(csFileName);
 		m_pCalcData->hisA = std::move(m_histogramAlpha);
 		m_pCalcData->hisR = std::move(m_histogramRed);
@@ -816,19 +820,52 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_pCalcData->hisB = std::move(m_histogramBlue);
 		m_pCalcData->m_pWnd = this;
 		m_pCalcData->bCancel = FALSE;
-		m_pCalcData->pocet = m_MT;
+		m_pCalcData->pocet = m_MT;*/
 		//m_pCalcData->mcas = &m_ctrlLog;
 
-		if(m_bShowCpixel)
+		std::thread thread([csFileName, &m_pthreadID, this]()
+		{
+			CalcData *v_pCalcData = nullptr;
+
+			CalcHistogram(m_pCalcData);
+			if (m_pthreadID == std::this_thread::get_id())
+			{
+				v_pCalcData = new CalcData;
+				v_pCalcData->obr = Gdiplus::Bitmap::FromFile(csFileName);
+				v_pCalcData->hisA = std::move(m_histogramAlpha);
+				v_pCalcData->hisR = std::move(m_histogramRed);
+				v_pCalcData->hisG = std::move(m_histogramGreen);
+				v_pCalcData->hisB = std::move(m_histogramBlue);
+				v_pCalcData->m_pWnd = this;
+				v_pCalcData->bCancel = FALSE;
+				v_pCalcData->pocet = m_MT;
+				m_pCalcData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)m_pCalcData);
+
+				m_pthreadID = std::thread::id();
+			}
+			else 
+			{
+				delete v_pCalcData;
+			}
+			m_ctrlImage.Invalidate();
+			m_ctrlHistogram.Invalidate();
+		});
+
+		/*if(m_bShowCpixel)
 			CalcHistogramBmpData(m_pCalcData);
 		if(m_bShowClockB)
 			CalcHistogram(m_pCalcData);
-		m_pCalcData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)m_pCalcData);
+		m_pCalcData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)m_pCalcData);*/
+
+		m_pthreadID = thread.get_id();
+		thread.detach();
 	}
 
-	m_ctrlImage.Invalidate();
+	/*m_ctrlImage.Invalidate();
 
-	m_ctrlHistogram.Invalidate();
+	m_ctrlHistogram.Invalidate();*/
+
+	
 
 	*pResult = 0;
 }
