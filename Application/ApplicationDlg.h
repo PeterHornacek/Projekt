@@ -7,6 +7,8 @@
 #include "LogDlg.h"
 #include <GdiPlus.h>
 #include <vector>
+#include <atomic>
+#include <thread>
 
 
 //definicia struktury CalcData
@@ -99,6 +101,8 @@ protected:
 
 	int m_MT = 2;
 
+	std::atomic<std::thread::id> m_pthreadID;
+
 	// Generated message map functions
 	BOOL OnInitDialog() override;
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -126,6 +130,8 @@ public:
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnFinish(WPARAM wParam, LPARAM lParam);
+	afx_msg void CalcHistogram(CalcData * pData);
+	afx_msg void CApplicationDlg::CalcHistogramBmpData(CalcData * pData);
 protected:
 	CListCtrl m_ctrlFileList;
 	CStaticImage m_ctrlImage;
