@@ -812,6 +812,145 @@ void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
 	}
 }
 
+void Effect(CalcData * pData)
+{
+	RECT r = { 0, 0,(LONG)pData->obr->GetWidth(),(LONG)pData->obr->GetHeight() };
+	Gdiplus::Rect rect = { r.left, r.top, r.right - r.left, r.bottom - r.top };
+	Gdiplus::BitmapData* bmpData = new Gdiplus::BitmapData;
+	INT32 *data;
+	INT32 val;
+
+	int height = bmpData->Height;
+	int width = bmpData->Width;
+	int i, j, m=1;
+	float p;
+	float matica[3][3];
+
+	int *** pixel = (int ***)malloc(height * sizeof(int**));
+
+	for (i = 0; i< height; i++)
+	{
+		pixel[i] = (int **)malloc(width * sizeof(int *));
+
+		for (j = 0; j < width; j++) 
+		{
+			pixel[i][j] = (int *)malloc(3 * sizeof(int));
+		}
+	}
+
+	int *** Refpixel = (int ***)malloc(height+2 * sizeof(int**));
+
+	for (i = 0; i< height+2; i++)
+	{
+		Refpixel[i] = (int **)malloc(width+2 * sizeof(int *));
+
+		for (j = 0; j < width+2; j++)
+		{
+			Refpixel[i][j] = (int *)malloc(3 * sizeof(int));
+		}
+	}
+
+	matica[0][0] = 0;	matica[0][1] = -1;	matica[0][2] = 0;
+	matica[1][0] = -1;	matica[1][1] = 5;	matica[1][2] = -1;
+	matica[2][0] = 0;	matica[2][1] = -1;	matica[2][2] = 0;
+
+	pData->obr->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
+	data = (INT32*)bmpData->Scan0;
+
+	for (i = 0; i < height; i++)
+		for (j = 0; j < width; j++)
+		{
+			val = *(data + i * width + j);
+			pixel[i][j][0] = (val >> 16) & 0xFF;
+			pixel[i][j][1] = (val >> 8) & 0xFF;
+			pixel[i][j][2] = val & 0xFF;
+		}
+
+	//REFLEXIA
+	for (int i = 0; i<height; i++)
+		for (int j = 0; j < width; j++)
+		{
+			Refpixel[1 + i][1 + j][0] = pixel[i][j][0];
+			Refpixel[1 + i][1 + j][1] = pixel[i][j][1];
+			Refpixel[1 + i][1 + j][2] = pixel[i][j][2];
+		}
+
+	for (int i = 0; i<m; i++)
+		for (int j = m; j<m + width; j++)
+		{
+			Refpixel[i][j][0] = Refpixel[2 * m - 1 - i][j][0];
+			Refpixel[m + height + i][j][0] = Refpixel[m + height - 1 - i][j][0];
+
+			Refpixel[i][j][1] = Refpixel[2 * m - 1 - i][j][1];
+			Refpixel[m + height + i][j][1] = Refpixel[m + height - 1 - i][j][1];
+
+			Refpixel[i][j][2] = Refpixel[2 * m - 1 - i][j][2];
+			Refpixel[m + height + i][j][2] = Refpixel[m + height - 1 - i][j][2];
+		}
+
+	for (int i = 0; i<height + 2 * m; i++)
+		for (int j = 0; j<m; j++)
+		{
+			Refpixel[i][j][0] = Refpixel[i][2 * m - 1 - j][0];
+			Refpixel[i][m + width + j][0] = Refpixel[i][m + width - 1 - j][0];
+
+			Refpixel[i][j][1] = Refpixel[i][2 * m - 1 - j][1];
+			Refpixel[i][m + width + j][1] = Refpixel[i][m + width - 1 - j][1];
+
+			Refpixel[i][j][2] = Refpixel[i][2 * m - 1 - j][2];
+			Refpixel[i][m + width + j][2] = Refpixel[i][m + width - 1 - j][2];
+		}
+	
+	//applying effects
+	for (i = 1; i<height + 1; i++)
+		for (j = 1; j<width + 1; j++)
+		{
+			//RED
+			p = Refpixel[i - 1][j - 1][0] * matica[0][0] + Refpixel[i - 1][j][0] * matica[0][1] + Refpixel[i - 1][j + 1][0] * matica[0][2];
+			p += Refpixel[i][j - 1][0] * matica[1][0] + Refpixel[i][j][0] * matica[1][1] + Refpixel[i][j + 1][0] * matica[1][2];
+			p += Refpixel[i + 1][j - 1][0] * matica[2][0] + Refpixel[i + 1][j][0] * matica[2][1] + Refpixel[i + 1][j + 1][0] * matica[2][2];
+
+			p = (int)(p + 0.5);
+
+			if (p > 255)
+				p = 255;
+			if (p < 0)
+				p = 0;
+
+			Refpixel[i - 1][j - 1][0] = p;
+
+			//GREEN
+			p = Refpixel[i - 1][j - 1][1] * matica[0][0] + Refpixel[i - 1][j][1] * matica[0][1] + Refpixel[i - 1][j + 1][1] * matica[0][2];
+			p += Refpixel[i][j - 1][1] * matica[1][0] + Refpixel[i][j][1] * matica[1][1] + Refpixel[i][j + 1][1] * matica[1][2];
+			p += Refpixel[i + 1][j - 1][1] * matica[2][0] + Refpixel[i + 1][j][1] * matica[2][1] + Refpixel[i + 1][j + 1][1] * matica[2][2];
+
+			p = (int)(p + 0.5);
+
+			if (p > 255)
+				p = 255;
+			if (p < 0)
+				p = 0;
+
+			Refpixel[i - 1][j - 1][1] = p;
+
+			//BLUE
+			p = Refpixel[i - 1][j - 1][2] * matica[0][0] + Refpixel[i - 1][j][2] * matica[0][1] + Refpixel[i - 1][j + 1][2] * matica[0][2];
+			p += Refpixel[i][j - 1][2] * matica[1][0] + Refpixel[i][j][2] * matica[1][1] + Refpixel[i][j + 1][2] * matica[1][2];
+			p += Refpixel[i + 1][j - 1][2] * matica[2][0] + Refpixel[i + 1][j][2] * matica[2][1] + Refpixel[i + 1][j + 1][2] * matica[2][2];
+
+			p = (int)(p + 0.5);
+
+			if (p > 255)
+				p = 255;
+			if (p < 0)
+				p = 0;
+
+			Refpixel[i - 1][j - 1][2] = p;
+		}
+
+	pData->obr->UnlockBits(bmpData);
+}
+
 void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
