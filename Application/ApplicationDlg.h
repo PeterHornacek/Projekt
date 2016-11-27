@@ -132,6 +132,7 @@ public:
 	afx_msg LRESULT OnFinish(WPARAM wParam, LPARAM lParam);
 	afx_msg void CalcHistogram(CalcData * pData);
 	afx_msg void CApplicationDlg::CalcHistogramBmpData(CalcData * pData);
+	afx_msg void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap);
 protected:
 	CListCtrl m_ctrlFileList;
 	CStaticImage m_ctrlImage;

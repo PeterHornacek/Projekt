@@ -758,6 +758,7 @@ void CApplicationDlg::CalcHistogram(CalcData * pData)
 
 				m_ctrlImage.Invalidate();
 				m_ctrlHistogram.Invalidate();
+				pData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)pData);
 			}
 	}
 	else
@@ -805,6 +806,8 @@ void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
 
 		m_ctrlImage.Invalidate();
 		m_ctrlHistogram.Invalidate();
+
+		pData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)pData);
 	}
 	else
 	{
@@ -812,18 +815,18 @@ void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
 	}
 }
 
-void Effect(CalcData * pData)
+void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 {
-	RECT r = { 0, 0,(LONG)pData->obr->GetWidth(),(LONG)pData->obr->GetHeight() };
+	RECT r = { 0, 0,(LONG)bitmap->GetWidth(),(LONG)bitmap->GetHeight() };
 	Gdiplus::Rect rect = { r.left, r.top, r.right - r.left, r.bottom - r.top };
 	Gdiplus::BitmapData* bmpData = new Gdiplus::BitmapData;
 	INT32 *data;
 	INT32 val;
 
-	int height = bmpData->Height;
-	int width = bmpData->Width;
+	int height = bitmap->GetHeight();
+	int width = bitmap->GetWidth();
 	int i, j, m=1;
-	float p;
+	float p, num;
 	float matica[3][3];
 
 	int *** pixel = (int ***)malloc(height * sizeof(int**));
@@ -838,11 +841,11 @@ void Effect(CalcData * pData)
 		}
 	}
 
-	int *** Refpixel = (int ***)malloc(height+2 * sizeof(int**));
+	int *** Refpixel = (int ***)malloc((height+2) * sizeof(int**));
 
 	for (i = 0; i< height+2; i++)
 	{
-		Refpixel[i] = (int **)malloc(width+2 * sizeof(int *));
+		Refpixel[i] = (int **)malloc((width+2) * sizeof(int *));
 
 		for (j = 0; j < width+2; j++)
 		{
@@ -850,11 +853,21 @@ void Effect(CalcData * pData)
 		}
 	}
 
-	matica[0][0] = 0;	matica[0][1] = -1;	matica[0][2] = 0;
-	matica[1][0] = -1;	matica[1][1] = 5;	matica[1][2] = -1;
-	matica[2][0] = 0;	matica[2][1] = -1;	matica[2][2] = 0;
+	num = 1;
 
-	pData->obr->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
+	matica[0][0] = 1;	matica[0][1] = 2;	matica[0][2] = 1;
+	matica[1][0] = 2;	matica[1][1] = 4;	matica[1][2] = 2;
+	matica[2][0] = 1;	matica[2][1] = 2;	matica[2][2] = 1;
+
+	/*matica[0][0] = -1;	matica[0][1] = 0;	matica[0][2] = 1;
+	matica[1][0] = -2;	matica[1][1] = 0;	matica[1][2] = 2;
+	matica[2][0] = -1;	matica[2][1] = 0;	matica[2][2] = 1;*/
+
+	/*matica[0][0] = -2;	matica[0][1] = -1;	matica[0][2] = 0;
+	matica[1][0] = -1;	matica[1][1] = 1;	matica[1][2] = 1;
+	matica[2][0] = 0;	matica[2][1] = 1;	matica[2][2] = 2;*/
+
+	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
 	data = (INT32*)bmpData->Scan0;
 
 	for (i = 0; i < height; i++)
@@ -910,7 +923,7 @@ void Effect(CalcData * pData)
 			p += Refpixel[i][j - 1][0] * matica[1][0] + Refpixel[i][j][0] * matica[1][1] + Refpixel[i][j + 1][0] * matica[1][2];
 			p += Refpixel[i + 1][j - 1][0] * matica[2][0] + Refpixel[i + 1][j][0] * matica[2][1] + Refpixel[i + 1][j + 1][0] * matica[2][2];
 
-			p = (int)(p + 0.5);
+			p = (int)(p / 14.0 + 0.5);
 
 			if (p > 255)
 				p = 255;
@@ -924,7 +937,7 @@ void Effect(CalcData * pData)
 			p += Refpixel[i][j - 1][1] * matica[1][0] + Refpixel[i][j][1] * matica[1][1] + Refpixel[i][j + 1][1] * matica[1][2];
 			p += Refpixel[i + 1][j - 1][1] * matica[2][0] + Refpixel[i + 1][j][1] * matica[2][1] + Refpixel[i + 1][j + 1][1] * matica[2][2];
 
-			p = (int)(p + 0.5);
+			p = (int)(p / 14.0 + 0.5);
 
 			if (p > 255)
 				p = 255;
@@ -938,7 +951,7 @@ void Effect(CalcData * pData)
 			p += Refpixel[i][j - 1][2] * matica[1][0] + Refpixel[i][j][2] * matica[1][1] + Refpixel[i][j + 1][2] * matica[1][2];
 			p += Refpixel[i + 1][j - 1][2] * matica[2][0] + Refpixel[i + 1][j][2] * matica[2][1] + Refpixel[i + 1][j + 1][2] * matica[2][2];
 
-			p = (int)(p + 0.5);
+			p = (int)(p / 14.0 + 0.5);
 
 			if (p > 255)
 				p = 255;
@@ -946,9 +959,9 @@ void Effect(CalcData * pData)
 				p = 0;
 
 			Refpixel[i - 1][j - 1][2] = p;
+			bitmap->UnlockBits(bmpData);
+			bitmap->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
 		}
-
-	pData->obr->UnlockBits(bmpData);
 }
 
 void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
@@ -983,7 +996,9 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_pCalcData->pocet = m_MT;
 		//m_pCalcData->mcas = &m_ctrlLog;
 
-		if (m_bCheckCpixel)
+		Effect(m_pBitmap);
+
+		/*if (m_bCheckCpixel)
 		{
 			std::thread tred(&CApplicationDlg::CalcHistogram, this, m_pCalcData);
 		}
@@ -993,12 +1008,12 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		}
 		m_pthreadID = tred.get_id();
 
-		tred.detach();
+		tred.detach();*/
 	}
 
-	/*m_ctrlImage.Invalidate();
+	m_ctrlImage.Invalidate();
 
-	m_ctrlHistogram.Invalidate();*/
+	m_ctrlHistogram.Invalidate();
 
 	
 
