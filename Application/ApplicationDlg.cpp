@@ -273,6 +273,16 @@ BEGIN_MESSAGE_MAP(CApplicationDlg, CDialogEx)
 	ON_COMMAND(ID_CALCULATING_LOCKBITS, &CApplicationDlg::OnCalculatingLockbits)
 	ON_UPDATE_COMMAND_UI(ID_CALCULATING_PIXEL, &CApplicationDlg::OnUpdateCalculatingPixel)
 	ON_UPDATE_COMMAND_UI(ID_CALCULATING_LOCKBITS, &CApplicationDlg::OnUpdateCalculatingLockbits)
+	ON_COMMAND(ID_EFFECT_BLUR, &CApplicationDlg::OnEffectBlur)
+	ON_UPDATE_COMMAND_UI(ID_EFFECT_BLUR, &CApplicationDlg::OnUpdateEffectBlur)
+	ON_COMMAND(ID_EFFECT_SOBEL, &CApplicationDlg::OnEffectSobel)
+	ON_UPDATE_COMMAND_UI(ID_EFFECT_SOBEL, &CApplicationDlg::OnUpdateEffectSobel)
+	ON_COMMAND(ID_ZOBRAZENIE_XY, &CApplicationDlg::OnZobrazenieXy)
+	ON_UPDATE_COMMAND_UI(ID_ZOBRAZENIE_XY, &CApplicationDlg::OnUpdateZobrazenieXy)
+	ON_COMMAND(ID_ZOBRAZENIE_X, &CApplicationDlg::OnZobrazenieX)
+	ON_UPDATE_COMMAND_UI(ID_ZOBRAZENIE_X, &CApplicationDlg::OnUpdateZobrazenieX)
+	ON_COMMAND(ID_ZOBRAZENIE_Y, &CApplicationDlg::OnZobrazenieY)
+	ON_UPDATE_COMMAND_UI(ID_ZOBRAZENIE_Y, &CApplicationDlg::OnUpdateZobrazenieY)
 END_MESSAGE_MAP()
 
 
@@ -826,8 +836,11 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 	int height = bitmap->GetHeight();
 	int width = bitmap->GetWidth();
 	int i, j, m=1;
-	float p, num;
+	float p, num, del;
 	float matica[3][3];
+
+	m_pBitmapXY = bitmap;
+	m_pBitmapY = bitmap;
 
 	int *** pixel = (int ***)malloc(height * sizeof(int**));
 
@@ -855,17 +868,29 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 
 	num = 1;
 
-	matica[0][0] = 1;	matica[0][1] = 2;	matica[0][2] = 1;
-	matica[1][0] = 2;	matica[1][1] = 4;	matica[1][2] = 2;
-	matica[2][0] = 1;	matica[2][1] = 2;	matica[2][2] = 1;
+	if (m_bShowEffectBlur)
+	{
+		matica[0][0] = 1;	matica[0][1] = 2;	matica[0][2] = 1;
+		matica[1][0] = 2;	matica[1][1] = 4;	matica[1][2] = 2;
+		matica[2][0] = 1;	matica[2][1] = 2;	matica[2][2] = 1;
+	}
+	
+	if (m_bShowEffectSobel)
+	{
+		matica[0][0] = -1;	matica[0][1] = 0;	matica[0][2] = 1;
+		matica[1][0] = -2;	matica[1][1] = 0;	matica[1][2] = 2;
+		matica[2][0] = -1;	matica[2][1] = 0;	matica[2][2] = 1;
+	}
 
-	/*matica[0][0] = -1;	matica[0][1] = 0;	matica[0][2] = 1;
-	matica[1][0] = -2;	matica[1][1] = 0;	matica[1][2] = 2;
-	matica[2][0] = -1;	matica[2][1] = 0;	matica[2][2] = 1;*/
+	del = 0.0;
+	for (int i = 0; i<3; i++)
+		for (int j = 0; j < 3; j++)
+		{
+			del += matica[i][j];
+		}
 
-	/*matica[0][0] = -2;	matica[0][1] = -1;	matica[0][2] = 0;
-	matica[1][0] = -1;	matica[1][1] = 1;	matica[1][2] = 1;
-	matica[2][0] = 0;	matica[2][1] = 1;	matica[2][2] = 2;*/
+	if (del == 0)
+		del = 1;
 
 	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
 	data = (INT32*)bmpData->Scan0;
@@ -914,6 +939,8 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 			Refpixel[i][m + width + j][2] = Refpixel[i][m + width - 1 - j][2];
 		}
 	
+	bitmap->UnlockBits(bmpData);
+
 	//applying effects
 	for (i = 1; i<height + 1; i++)
 		for (j = 1; j<width + 1; j++)
@@ -923,7 +950,7 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 			p += Refpixel[i][j - 1][0] * matica[1][0] + Refpixel[i][j][0] * matica[1][1] + Refpixel[i][j + 1][0] * matica[1][2];
 			p += Refpixel[i + 1][j - 1][0] * matica[2][0] + Refpixel[i + 1][j][0] * matica[2][1] + Refpixel[i + 1][j + 1][0] * matica[2][2];
 
-			p = (int)(p / 14.0 + 0.5);
+			p = (int)(p / del + 0.5);
 
 			if (p > 255)
 				p = 255;
@@ -937,7 +964,7 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 			p += Refpixel[i][j - 1][1] * matica[1][0] + Refpixel[i][j][1] * matica[1][1] + Refpixel[i][j + 1][1] * matica[1][2];
 			p += Refpixel[i + 1][j - 1][1] * matica[2][0] + Refpixel[i + 1][j][1] * matica[2][1] + Refpixel[i + 1][j + 1][1] * matica[2][2];
 
-			p = (int)(p / 14.0 + 0.5);
+			p = (int)(p / del + 0.5);
 
 			if (p > 255)
 				p = 255;
@@ -951,7 +978,7 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 			p += Refpixel[i][j - 1][2] * matica[1][0] + Refpixel[i][j][2] * matica[1][1] + Refpixel[i][j + 1][2] * matica[1][2];
 			p += Refpixel[i + 1][j - 1][2] * matica[2][0] + Refpixel[i + 1][j][2] * matica[2][1] + Refpixel[i + 1][j + 1][2] * matica[2][2];
 
-			p = (int)(p / 14.0 + 0.5);
+			p = (int)(p / del + 0.5);
 
 			if (p > 255)
 				p = 255;
@@ -959,9 +986,29 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 				p = 0;
 
 			Refpixel[i - 1][j - 1][2] = p;
-			bitmap->UnlockBits(bmpData);
-			bitmap->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
+			
+			m_pBitmapY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
+
+			/*if(j < m_pBitmapXY->GetWidth() /2.0)
+				m_pBitmapXY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
+			if(j >= m_pBitmapXY->GetWidth() /2.0 && j < m_pBitmapXY->GetWidth())
+				m_pBitmapXY->SetPixel(j, i, Color::MakeARGB(255, pixel[i][j][0], pixel[i][j][1], pixel[i][j][2]));*/
 		}
+
+	if (m_bShowZobrazenieXY)
+	{
+		bitmap = m_pBitmapXY;
+	}
+
+	if (m_bShowZobrazenieX)
+	{
+		bitmap = m_pBitmapX;
+	}
+
+	if (m_bShowZobrazenieY)
+	{
+		bitmap = m_pBitmapY;
+	}
 }
 
 void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
@@ -995,6 +1042,8 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_pCalcData->bCancel = FALSE;
 		m_pCalcData->pocet = m_MT;
 		//m_pCalcData->mcas = &m_ctrlLog;
+
+		m_pBitmapX = Gdiplus::Bitmap::FromFile(csFileName);
 
 		Effect(m_pBitmap);
 
@@ -1279,4 +1328,151 @@ void CApplicationDlg::OnUpdateCalculatingLockbits(CCmdUI *pCmdUI)
 		pCmdUI->SetCheck(m_bCheckClockB);
 	else
 		pCmdUI->SetCheck(m_bCheckClockB);
+}
+
+
+void CApplicationDlg::OnEffectBlur()
+{
+	// TODO: Add your command handler code here
+
+	if (m_bShowEffectBlur == FALSE)
+	{
+		m_bShowEffectBlur = TRUE;
+		m_bShowEffectSobel = FALSE;
+	}
+
+
+	if (m_bCheckEffectBlur == FALSE)
+	{
+		m_bCheckEffectBlur = TRUE;
+		m_bCheckEffectSobel = FALSE;
+	}
+}
+
+
+void CApplicationDlg::OnUpdateEffectBlur(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckEffectBlur == TRUE)
+		pCmdUI->SetCheck(m_bCheckEffectBlur);
+	else
+		pCmdUI->SetCheck(m_bCheckEffectBlur);
+}
+
+
+void CApplicationDlg::OnEffectSobel()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowEffectSobel == FALSE)
+	{
+		m_bShowEffectBlur = FALSE;
+		m_bShowEffectSobel = TRUE;
+	}
+
+
+	if (m_bCheckEffectSobel == FALSE)
+	{
+		m_bCheckEffectBlur = FALSE;
+		m_bCheckEffectSobel = TRUE;
+	}
+}
+
+
+void CApplicationDlg::OnUpdateEffectSobel(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckEffectSobel == TRUE)
+		pCmdUI->SetCheck(m_bCheckEffectSobel);
+	else
+		pCmdUI->SetCheck(m_bCheckEffectSobel);
+}
+
+
+void CApplicationDlg::OnZobrazenieXy()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowZobrazenieXY == FALSE)
+	{
+		m_bShowZobrazenieXY = TRUE;
+		m_bShowZobrazenieX = FALSE;
+		m_bShowZobrazenieY = FALSE;
+	}
+
+
+	if (m_bCheckZobrazenieXY == FALSE)
+	{
+		m_bCheckZobrazenieXY = TRUE;
+		m_bCheckZobrazenieX = FALSE;
+		m_bCheckZobrazenieY = FALSE;
+	}
+}
+
+
+void CApplicationDlg::OnUpdateZobrazenieXy(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckZobrazenieXY == TRUE)
+		pCmdUI->SetCheck(m_bCheckZobrazenieXY);
+	else
+		pCmdUI->SetCheck(m_bCheckZobrazenieXY);
+}
+
+
+void CApplicationDlg::OnZobrazenieX()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowZobrazenieX == FALSE)
+	{
+		m_bShowZobrazenieXY = FALSE;
+		m_bShowZobrazenieX = TRUE;
+		m_bShowZobrazenieY = FALSE;
+	}
+
+
+	if (m_bCheckZobrazenieX == FALSE)
+	{
+		m_bCheckZobrazenieXY = FALSE;
+		m_bCheckZobrazenieX = TRUE;
+		m_bCheckZobrazenieY = FALSE;
+	}
+}
+
+
+void CApplicationDlg::OnUpdateZobrazenieX(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckZobrazenieX == TRUE)
+		pCmdUI->SetCheck(m_bCheckZobrazenieX);
+	else
+		pCmdUI->SetCheck(m_bCheckZobrazenieX);
+}
+
+
+void CApplicationDlg::OnZobrazenieY()
+{
+	// TODO: Add your command handler code here
+	if (m_bShowZobrazenieY == FALSE)
+	{
+		m_bShowZobrazenieXY = FALSE;
+		m_bShowZobrazenieX = FALSE;
+		m_bShowZobrazenieY = TRUE;
+	}
+
+
+	if (m_bCheckZobrazenieY == FALSE)
+	{
+		m_bCheckZobrazenieXY = FALSE;
+		m_bCheckZobrazenieX = FALSE;
+		m_bCheckZobrazenieY = TRUE;
+	}
+}
+
+
+void CApplicationDlg::OnUpdateZobrazenieY(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	if (m_bCheckZobrazenieY == TRUE)
+		pCmdUI->SetCheck(m_bCheckZobrazenieY);
+	else
+		pCmdUI->SetCheck(m_bCheckZobrazenieY);
 }

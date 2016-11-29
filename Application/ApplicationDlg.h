@@ -89,6 +89,11 @@ protected:
 	BOOL m_bShowCutype = FALSE;
 	BOOL m_bShowCpixel = TRUE;
 	BOOL m_bShowClockB = FALSE;
+	BOOL m_bShowEffectBlur = TRUE;
+	BOOL m_bShowEffectSobel = FALSE;
+	BOOL m_bShowZobrazenieXY = TRUE;
+	BOOL m_bShowZobrazenieX = FALSE;
+	BOOL m_bShowZobrazenieY = FALSE;
 
 	BOOL m_bCheckLuminance = FALSE;
 	BOOL m_bCheckRed = TRUE;
@@ -98,6 +103,11 @@ protected:
 	BOOL m_bCheckCutype = FALSE;
 	BOOL m_bCheckCpixel = TRUE;
 	BOOL m_bCheckClockB = FALSE;
+	BOOL m_bCheckEffectBlur = TRUE;
+	BOOL m_bCheckEffectSobel = FALSE;
+	BOOL m_bCheckZobrazenieXY = TRUE;
+	BOOL m_bCheckZobrazenieX = FALSE;
+	BOOL m_bCheckZobrazenieY = FALSE;
 
 	int m_MT = 2;
 
@@ -147,6 +157,10 @@ protected:
 	CLogDlg m_ctrlLog;
 
 	Gdiplus::Bitmap * m_pBitmap;
+	Gdiplus::Bitmap * m_pBitmapX = nullptr;
+	Gdiplus::Bitmap * m_pBitmapY = nullptr;
+	Gdiplus::Bitmap * m_pBitmapXY = nullptr;
+
 	DWORD m_nMaxThreads;
 public:
 	afx_msg void OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult);
@@ -170,4 +184,14 @@ public:
 	afx_msg void OnCalculatingLockbits();
 	afx_msg void OnUpdateCalculatingPixel(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateCalculatingLockbits(CCmdUI *pCmdUI);
+	afx_msg void OnEffectBlur();
+	afx_msg void OnUpdateEffectBlur(CCmdUI *pCmdUI);
+	afx_msg void OnEffectSobel();
+	afx_msg void OnUpdateEffectSobel(CCmdUI *pCmdUI);
+	afx_msg void OnZobrazenieXy();
+	afx_msg void OnUpdateZobrazenieXy(CCmdUI *pCmdUI);
+	afx_msg void OnZobrazenieX();
+	afx_msg void OnUpdateZobrazenieX(CCmdUI *pCmdUI);
+	afx_msg void OnZobrazenieY();
+	afx_msg void OnUpdateZobrazenieY(CCmdUI *pCmdUI);
 };
