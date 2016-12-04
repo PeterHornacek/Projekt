@@ -829,7 +829,7 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 {
 	RECT r = { 0, 0,(LONG)bitmap->GetWidth(),(LONG)bitmap->GetHeight() };
 	Gdiplus::Rect rect = { r.left, r.top, r.right - r.left, r.bottom - r.top };
-	Gdiplus::BitmapData* bmpData = new Gdiplus::BitmapData;
+	Gdiplus::BitmapData* bData = new Gdiplus::BitmapData;
 	INT32 *data;
 	INT32 val;
 
@@ -870,9 +870,9 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 
 	if (m_bShowEffectBlur)
 	{
-		matica[0][0] = 1;	matica[0][1] = 2;	matica[0][2] = 1;
-		matica[1][0] = 2;	matica[1][1] = 4;	matica[1][2] = 2;
-		matica[2][0] = 1;	matica[2][1] = 2;	matica[2][2] = 1;
+		matica[0][0] = 0;	matica[0][1] = -1;	matica[0][2] = 0;
+		matica[1][0] = -1;	matica[1][1] = 5;	matica[1][2] = -1;
+		matica[2][0] = 0;	matica[2][1] = -1;	matica[2][2] = 0;
 	}
 	
 	if (m_bShowEffectSobel)
@@ -892,8 +892,8 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 	if (del == 0)
 		del = 1;
 
-	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
-	data = (INT32*)bmpData->Scan0;
+	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bData);
+	data = (INT32*)bData->Scan0;
 
 	for (i = 0; i < height; i++)
 		for (j = 0; j < width; j++)
@@ -939,76 +939,69 @@ void CApplicationDlg::Effect(Gdiplus::Bitmap * bitmap)
 			Refpixel[i][m + width + j][2] = Refpixel[i][m + width - 1 - j][2];
 		}
 	
-	bitmap->UnlockBits(bmpData);
+	bitmap->UnlockBits(bData);
 
 	//applying effects
 	for (i = 1; i<height + 1; i++)
 		for (j = 1; j<width + 1; j++)
 		{
-			//RED
-			p = Refpixel[i - 1][j - 1][0] * matica[0][0] + Refpixel[i - 1][j][0] * matica[0][1] + Refpixel[i - 1][j + 1][0] * matica[0][2];
-			p += Refpixel[i][j - 1][0] * matica[1][0] + Refpixel[i][j][0] * matica[1][1] + Refpixel[i][j + 1][0] * matica[1][2];
-			p += Refpixel[i + 1][j - 1][0] * matica[2][0] + Refpixel[i + 1][j][0] * matica[2][1] + Refpixel[i + 1][j + 1][0] * matica[2][2];
+			if (m_bShowZobrazenieY || m_bShowZobrazenieXY)
+			{
+				//RED
+				p = Refpixel[i - 1][j - 1][0] * matica[0][0] + Refpixel[i - 1][j][0] * matica[0][1] + Refpixel[i - 1][j + 1][0] * matica[0][2];
+				p += Refpixel[i][j - 1][0] * matica[1][0] + Refpixel[i][j][0] * matica[1][1] + Refpixel[i][j + 1][0] * matica[1][2];
+				p += Refpixel[i + 1][j - 1][0] * matica[2][0] + Refpixel[i + 1][j][0] * matica[2][1] + Refpixel[i + 1][j + 1][0] * matica[2][2];
 
-			p = (int)(p / del + 0.5);
+				p = (int)(p / del + 0.5);
 
-			if (p > 255)
-				p = 255;
-			if (p < 0)
-				p = 0;
+				if (p > 255)
+					p = 255;
+				if (p < 0)
+					p = 0;
 
-			Refpixel[i - 1][j - 1][0] = p;
+				Refpixel[i - 1][j - 1][0] = p;
 
-			//GREEN
-			p = Refpixel[i - 1][j - 1][1] * matica[0][0] + Refpixel[i - 1][j][1] * matica[0][1] + Refpixel[i - 1][j + 1][1] * matica[0][2];
-			p += Refpixel[i][j - 1][1] * matica[1][0] + Refpixel[i][j][1] * matica[1][1] + Refpixel[i][j + 1][1] * matica[1][2];
-			p += Refpixel[i + 1][j - 1][1] * matica[2][0] + Refpixel[i + 1][j][1] * matica[2][1] + Refpixel[i + 1][j + 1][1] * matica[2][2];
+				//GREEN
+				p = Refpixel[i - 1][j - 1][1] * matica[0][0] + Refpixel[i - 1][j][1] * matica[0][1] + Refpixel[i - 1][j + 1][1] * matica[0][2];
+				p += Refpixel[i][j - 1][1] * matica[1][0] + Refpixel[i][j][1] * matica[1][1] + Refpixel[i][j + 1][1] * matica[1][2];
+				p += Refpixel[i + 1][j - 1][1] * matica[2][0] + Refpixel[i + 1][j][1] * matica[2][1] + Refpixel[i + 1][j + 1][1] * matica[2][2];
 
-			p = (int)(p / del + 0.5);
+				p = (int)(p / del + 0.5);
 
-			if (p > 255)
-				p = 255;
-			if (p < 0)
-				p = 0;
+				if (p > 255)
+					p = 255;
+				if (p < 0)
+					p = 0;
 
-			Refpixel[i - 1][j - 1][1] = p;
+				Refpixel[i - 1][j - 1][1] = p;
 
-			//BLUE
-			p = Refpixel[i - 1][j - 1][2] * matica[0][0] + Refpixel[i - 1][j][2] * matica[0][1] + Refpixel[i - 1][j + 1][2] * matica[0][2];
-			p += Refpixel[i][j - 1][2] * matica[1][0] + Refpixel[i][j][2] * matica[1][1] + Refpixel[i][j + 1][2] * matica[1][2];
-			p += Refpixel[i + 1][j - 1][2] * matica[2][0] + Refpixel[i + 1][j][2] * matica[2][1] + Refpixel[i + 1][j + 1][2] * matica[2][2];
+				//BLUE
+				p = Refpixel[i - 1][j - 1][2] * matica[0][0] + Refpixel[i - 1][j][2] * matica[0][1] + Refpixel[i - 1][j + 1][2] * matica[0][2];
+				p += Refpixel[i][j - 1][2] * matica[1][0] + Refpixel[i][j][2] * matica[1][1] + Refpixel[i][j + 1][2] * matica[1][2];
+				p += Refpixel[i + 1][j - 1][2] * matica[2][0] + Refpixel[i + 1][j][2] * matica[2][1] + Refpixel[i + 1][j + 1][2] * matica[2][2];
 
-			p = (int)(p / del + 0.5);
+				p = (int)(p / del + 0.5);
 
-			if (p > 255)
-				p = 255;
-			if (p < 0)
-				p = 0;
+				if (p > 255)
+					p = 255;
+				if (p < 0)
+					p = 0;
 
-			Refpixel[i - 1][j - 1][2] = p;
+				Refpixel[i - 1][j - 1][2] = p;
+
+				m_pBitmapY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
+
+				if (m_bShowZobrazenieXY)
+				{
+					if(j < (width /2.0))
+						m_pBitmapXY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
+					if(j >= (width /2.0) && j < width)
+						m_pBitmapXY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i][j][0], Refpixel[i][j][1], Refpixel[i][j][2]));
+				}
+				
+			}
 			
-			m_pBitmapY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
-
-			/*if(j < m_pBitmapXY->GetWidth() /2.0)
-				m_pBitmapXY->SetPixel(j, i, Color::MakeARGB(255, Refpixel[i - 1][j - 1][0], Refpixel[i - 1][j - 1][1], Refpixel[i - 1][j - 1][2]));
-			if(j >= m_pBitmapXY->GetWidth() /2.0 && j < m_pBitmapXY->GetWidth())
-				m_pBitmapXY->SetPixel(j, i, Color::MakeARGB(255, pixel[i][j][0], pixel[i][j][1], pixel[i][j][2]));*/
 		}
-
-	if (m_bShowZobrazenieXY)
-	{
-		bitmap = m_pBitmapXY;
-	}
-
-	if (m_bShowZobrazenieX)
-	{
-		bitmap = m_pBitmapX;
-	}
-
-	if (m_bShowZobrazenieY)
-	{
-		bitmap = m_pBitmapY;
-	}
 }
 
 void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
@@ -1029,6 +1022,8 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 	m_pthreadID = std::this_thread::get_id();
 	std::thread tred;
 
+	m_pBitmapX = m_pBitmap;
+
 	if (!csFileName.IsEmpty())
 	{
 		m_pBitmap = Gdiplus::Bitmap::FromFile(csFileName);
@@ -1043,8 +1038,7 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		m_pCalcData->pocet = m_MT;
 		//m_pCalcData->mcas = &m_ctrlLog;
 
-		m_pBitmapX = Gdiplus::Bitmap::FromFile(csFileName);
-
+		m_pBitmapX = m_pBitmap;
 		Effect(m_pBitmap);
 
 		/*if (m_bCheckCpixel)
