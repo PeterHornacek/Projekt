@@ -313,12 +313,12 @@ LRESULT CApplicationDlg::OnFinish(WPARAM wParam, LPARAM lParam)
 				m_histogramGreen = std::move(ptr->hisG);
 				m_histogramBlue = std::move(ptr->hisB);
 				m_pBitmap = ptr->obr;
-				ptr->obr = nullptr;
+				
 
 				m_ctrlImage.Invalidate();
 
 				m_ctrlHistogram.Invalidate();
-
+				ptr->obr = nullptr;
 				if (m_pCalcData == ptr)
 				{
 					m_pCalcData = NULL;
@@ -748,8 +748,7 @@ void CApplicationDlg::CalcHistogram(CalcData * pData)
 	height = pData->obr->GetHeight();
 	width = pData->obr->GetWidth();
 
-	if (std::this_thread::get_id() == m_pthreadID)
-	{
+	
 		for (int i = 0; i < height; i++)
 			for (int j = 0; j < width; j++)
 			{
@@ -765,16 +764,10 @@ void CApplicationDlg::CalcHistogram(CalcData * pData)
 				pData->hisR[r] = pData->hisR[r] + 1;
 				pData->hisG[g] = pData->hisG[g] + 1;
 				pData->hisB[b] = pData->hisB[b] + 1;
-
-				m_ctrlImage.Invalidate();
-				m_ctrlHistogram.Invalidate();
-				pData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)pData);
 			}
-	}
-	else
-	{
-		delete pData;
-	}
+		m_ctrlImage.Invalidate();
+		m_ctrlHistogram.Invalidate();
+		
 }
 
 void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
@@ -784,7 +777,7 @@ void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
 	Gdiplus::BitmapData* bmpData = new Gdiplus::BitmapData;
 	INT32 * data;
 	int width, height, A, R, G, B;
-	INT32 val;
+	INT32 val = 0;
 
 	pData->obr->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, bmpData);
 	data = (INT32*)bmpData->Scan0;
@@ -804,7 +797,7 @@ void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
 	if (pData->bCancel == true)
 		return;
 
-	if (std::this_thread::get_id() == m_pthreadID)
+	if (std::this_thread::get_id() == m_pthreadID || m_pthreadID == std::thread::id())
 	{
 		for (int y = 0; y < height; y++)
 			for (int x = 0; x < width; x++)
@@ -814,8 +807,8 @@ void CApplicationDlg::CalcHistogramBmpData(CalcData * pData)
 
 		pData->obr->UnlockBits(bmpData);
 
-		m_ctrlImage.Invalidate();
-		m_ctrlHistogram.Invalidate();
+		//m_ctrlImage.Invalidate();
+		//m_ctrlHistogram.Invalidate();
 
 		pData->m_pWnd->SendMessage(WM_FINISH, (WPARAM)pData);
 	}
@@ -1040,10 +1033,10 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 
 		m_pBitmapX = m_pBitmap;
 		Effect(m_pBitmap);
-
-		/*if (m_bCheckCpixel)
+		m_pthreadID = std::thread::id();
+		if (m_bCheckCpixel)
 		{
-			std::thread tred(&CApplicationDlg::CalcHistogram, this, m_pCalcData);
+			CalcHistogram(m_pCalcData);
 		}
 		if (m_bCheckClockB)
 		{
@@ -1051,16 +1044,16 @@ void CApplicationDlg::OnLvnItemchangedFileList(NMHDR *pNMHDR, LRESULT *pResult)
 		}
 		m_pthreadID = tred.get_id();
 
-		tred.detach();*/
+		tred.detach();
 	}
 
-	m_ctrlImage.Invalidate();
-
-	m_ctrlHistogram.Invalidate();
+	
 
 	
 
 	*pResult = 0;
+	//m_ctrlImage.Invalidate();
+	//m_ctrlHistogram.Invalidate();
 }
 
 
